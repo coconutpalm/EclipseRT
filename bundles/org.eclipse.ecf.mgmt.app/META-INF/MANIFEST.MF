@@ -13,3 +13,4 @@ Export-Package: org.eclipse.ecf.mgmt.app
 Import-Package: org.eclipse.ecf.remoteservice,
  org.eclipse.equinox.concurrent.future,
  org.osgi.service.application
+Bundle-ActivationPolicy: lazy

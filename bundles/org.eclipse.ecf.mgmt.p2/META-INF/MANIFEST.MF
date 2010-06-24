@@ -18,3 +18,4 @@ Import-Package: org.eclipse.ecf.remoteservice,
  org.eclipse.equinox.p2.engine;version="2.0.0",
  org.eclipse.equinox.p2.metadata;version="2.0.0",
  org.eclipse.equinox.p2.repository
+Bundle-ActivationPolicy: lazy

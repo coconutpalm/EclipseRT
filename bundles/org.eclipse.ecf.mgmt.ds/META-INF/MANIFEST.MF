@@ -17,3 +17,4 @@ Import-Package: org.apache.felix.scr;version="1.2.0",
  org.osgi.framework,
  org.osgi.service.component
 Export-Package: org.eclipse.ecf.mgmt.ds
+Bundle-ActivationPolicy: lazy

@@ -14,3 +14,4 @@ Import-Package: org.eclipse.ecf.remoteservice,
  org.eclipse.equinox.concurrent.future,
  org.eclipse.osgi.service.resolver,
  org.osgi.framework
+Bundle-ActivationPolicy: lazy
