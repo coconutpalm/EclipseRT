@@ -54,15 +54,17 @@ public class VersionedId implements IVersionedId, Serializable {
 			return version.equals(otherVersion);
 		}
 	}
-	
+
 	public boolean equals(Object o) {
 		if (o == null)
 			return false;
 		if (!(o instanceof VersionedId))
 			return false;
 		VersionedId other = (VersionedId) o;
-		if (other.id.equals(id)) return versionsEqual(other.version);
-		else return false;
+		if (other.id.equals(id))
+			return versionsEqual(other.version);
+		else
+			return false;
 	}
 
 	public String toString() {
@@ -76,7 +78,8 @@ public class VersionedId implements IVersionedId, Serializable {
 	}
 
 	public int compareVersion(String otherVersion) {
-		if (otherVersion == null) return 1;
+		if (otherVersion == null)
+			return 1;
 		// Create OSGi version for this
 		Version tVersion = Version.parseVersion(this.version);
 		// Create local OSGi version for other
@@ -85,7 +88,8 @@ public class VersionedId implements IVersionedId, Serializable {
 	}
 
 	public int compareVersion(IVersionedId other) {
-		if (other == null) return 1;
+		if (other == null)
+			return 1;
 		return compareVersion(other.getVersion());
 	}
 

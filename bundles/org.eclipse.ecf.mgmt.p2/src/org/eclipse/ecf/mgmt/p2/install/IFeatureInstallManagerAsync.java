@@ -35,6 +35,19 @@ public interface IFeatureInstallManagerAsync extends IAsyncRemoteServiceProxy {
 
 	public IFuture getInstallableFeaturesAsync();
 
+	public void installFeatureAsync(IVersionedId featureId,
+			URI[] repoLocations, String profileId,
+			IAsyncCallback<IStatus> callback);
+
+	public IFuture installFeatureAsync(IVersionedId featureId,
+			URI[] repoLocations, String profileId);
+
+	public void installFeatureAsync(IVersionedId featureId,
+			URI[] repoLocations, IAsyncCallback<IStatus> callback);
+
+	public IFuture installFeatureAsync(IVersionedId featureId,
+			URI[] repoLocations);
+
 	public void installFeatureAsync(IVersionedId featureId, String profileId,
 			IAsyncCallback<IStatus> callback);
 
@@ -44,6 +57,41 @@ public interface IFeatureInstallManagerAsync extends IAsyncRemoteServiceProxy {
 			IAsyncCallback<IStatus> callback);
 
 	public IFuture installFeatureAsync(IVersionedId featureId);
+
+	public void updateFeatureAsync(IVersionedId featureId, URI[] repoLocations,
+			String profileId, IAsyncCallback<IStatus> callback);
+
+	public IFuture updateFeatureAsync(IVersionedId featureId,
+			URI[] repoLocations, String profileId);
+
+	public void updateFeatureAsync(IVersionedId featureId, URI[] repoLocations,
+			IAsyncCallback<IStatus> callback);
+
+	public IFuture updateFeatureAsync(IVersionedId featureId,
+			URI[] repoLocations);
+
+	public void updateFeatureAsync(IVersionedId featureId, String profileId,
+			IAsyncCallback<IStatus> callback);
+
+	public IFuture updateFeatureAsync(IVersionedId featureId, String profileId);
+
+	public void updateFeatureAsync(IVersionedId featureId,
+			IAsyncCallback<IStatus> callback);
+
+	public IFuture updateFeatureAsync(IVersionedId featureId);
+
+	public void uninstallFeatureAsync(IVersionedId featureId,
+			URI[] repoLocations, String profileId,
+			IAsyncCallback<IStatus> callback);
+
+	public IFuture uninstallFeatureAsync(IVersionedId featureId,
+			URI[] repoLocations, String profileId);
+
+	public void uninstallFeatureAsync(IVersionedId featureId,
+			URI[] repoLocations, IAsyncCallback<IStatus> callback);
+
+	public IFuture uninstallFeatureAsync(IVersionedId featureId,
+			URI[] repoLocations);
 
 	public void uninstallFeatureAsync(IVersionedId featureId, String profileId,
 			IAsyncCallback<IStatus> callback);
@@ -55,4 +103,5 @@ public interface IFeatureInstallManagerAsync extends IAsyncRemoteServiceProxy {
 			IAsyncCallback<IStatus> callback);
 
 	public IFuture uninstallFeatureAsync(IVersionedId featureId);
+
 }
