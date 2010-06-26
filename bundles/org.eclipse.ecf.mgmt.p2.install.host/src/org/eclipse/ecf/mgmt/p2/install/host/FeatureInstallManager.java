@@ -65,6 +65,18 @@ public class FeatureInstallManager implements IFeatureInstallManager,
 		this.agent = agent;
 	}
 
+	protected IProgressMonitor getMonitorForInstall() {
+		return new NullProgressMonitor();
+	}
+
+	protected IProgressMonitor getMonitorForUninstall() {
+		return new NullProgressMonitor();
+	}
+
+	protected IProgressMonitor getMonitorForUpdate() {
+		return new NullProgressMonitor();
+	}
+
 	public IStatus installFeature(IVersionedId featureId, URI[] repoLocations,
 			String profileId) {
 		// Parameter sanity checks
@@ -83,7 +95,7 @@ public class FeatureInstallManager implements IFeatureInstallManager,
 			return createErrorStatus("installFeature: no profile matching profileId="
 					+ profileId);
 
-		IProgressMonitor monitor = new NullProgressMonitor();
+		IProgressMonitor monitor = getMonitorForInstall();
 		String unitId = featureId.getId();
 		String unitVersion = featureId.getVersion();
 		// Query available/specified repository locations for given installable
@@ -115,18 +127,11 @@ public class FeatureInstallManager implements IFeatureInstallManager,
 					+ unitVersion
 					+ " not found in repositories.  Cannot continue with install.");
 		
-		// We take the first one...if there are multiple returned from given set
-		// of repos This means that we take the feature to install from the first repo
-		// that has the given feature (with given version)
-		IInstallableUnit featureToInstall = (IInstallableUnit) featuresToInstall
-				.get(0);
-		List fToInstall = new ArrayList();
-		fToInstall.add(featureToInstall);
-		return installOrUninstallIUs(fToInstall, profile, monitor, true);
+		return installOrUninstallIUs(featuresToInstall, null, profile, monitor);
 	}
 
-	private IStatus installOrUninstallIUs(Collection features,
-			IProfile profile, IProgressMonitor monitor, boolean install) {
+	private IStatus installOrUninstallIUs(Collection featuresToInstall, Collection featuresToUninstall,
+			IProfile profile, IProgressMonitor monitor) {
 		// Make sure we have planner
 		IPlanner planner = (IPlanner) agent.getService(IPlanner.SERVICE_NAME);
 		if (planner == null)
@@ -137,20 +142,35 @@ public class FeatureInstallManager implements IFeatureInstallManager,
 			return createErrorStatus("No engine available");
 
 		// Create provisioning context
-		ProvisioningContext provContext = new ProvisioningContext(agent);
+		ProvisioningContext provContext = createProvisioningContext(agent);
 		// Create profile change request
-		IProfileChangeRequest request = planner.createChangeRequest(profile);
-		// Add feature to install
-		if (install) request.addAll(features);
-		else request.removeAll(features);
+		IProfileChangeRequest request = createProfileChangeRequest(planner, profile, featuresToInstall, featuresToUninstall);
 		// Get provisioning plan
-		IProvisioningPlan result = planner.getProvisioningPlan(request,
+		IProvisioningPlan result = doPlan(planner, request,
 				provContext, monitor);
-		// Execute plan
+		// check plan result
+		IStatus planStatus = result.getStatus();
+		if (!planStatus.isOK()) return new SerializableStatus(planStatus);
+		// Otherwise execute plan
 		IStatus engineResult = executePlan(result, engine, provContext, monitor);
 		return new SerializableStatus(engineResult);
 	}
 
+	protected ProvisioningContext createProvisioningContext(IProvisioningAgent agent) {
+		return new ProvisioningContext(agent);
+	}
+	
+	protected IProfileChangeRequest createProfileChangeRequest(IPlanner planner, IProfile profile, Collection<IInstallableUnit> toInstall, Collection<IInstallableUnit> toUninstall) {
+		IProfileChangeRequest request = planner.createChangeRequest(profile);
+		if (toInstall != null) request.addAll(toInstall);
+		if (toUninstall != null) request.removeAll(toUninstall);
+		return request;
+	}
+	
+	protected IProvisioningPlan doPlan(IPlanner planner, IProfileChangeRequest profileChangeRequest, ProvisioningContext provisioningContext, IProgressMonitor monitor) {
+		return planner.getProvisioningPlan(profileChangeRequest, provisioningContext, monitor);
+	}
+	
 	public IStatus installFeature(IVersionedId featureId, URI[] repoLocations) {
 		return installFeature(featureId, repoLocations, null);
 	}
@@ -182,7 +202,7 @@ public class FeatureInstallManager implements IFeatureInstallManager,
 					+ profileId);
 
 		// For given profile, we should find some version to remove
-		IProgressMonitor monitor = new NullProgressMonitor();
+		IProgressMonitor monitor = getMonitorForUpdate();
 		IQueryResult installedFeatures = profile.query(
 				QueryUtil.createIUQuery(featureId.getId()), monitor);
 		// If no installed features for given featureId
@@ -210,18 +230,23 @@ public class FeatureInstallManager implements IFeatureInstallManager,
 		// Now have maxInstalledVersion
 		org.eclipse.equinox.p2.metadata.VersionedId p2VersionedId = new org.eclipse.equinox.p2.metadata.VersionedId(
 				featureId.getId(), featureId.getVersion());
+		
 		Version updateVersion = p2VersionedId.getVersion();
 
 		Version maxInstalledFeatureVersion = maxInstalledFeature.getVersion();
-		// If the installed version is greater than the requested version, then
-		// we have nothing to do
-		if (maxInstalledFeatureVersion.compareTo(updateVersion) > 0)
-			return createErrorStatus("updateFeature: Nothing to update.  Feature="
-					+ featureId.getId()
-					+ ",v="
-					+ featureId.getVersion()
-					+ " is older than installed feature v="
-					+ p2VersionedId.getVersion());
+
+		if (!updateVersion.equals(Version.emptyVersion)) {
+			// If we're asking to update to a specific version, and we already have a newer version installed, then
+			// we have nothing to do
+			if (maxInstalledFeatureVersion.compareTo(updateVersion) > 0) {
+				return createErrorStatus("updateFeature: Nothing to update.  Feature="
+						+ featureId.getId()
+						+ ",v="
+						+ featureId.getVersion()
+						+ " is older than installed feature v="
+						+ p2VersionedId.getVersion());
+			}
+		} 
 
 		// Now query metadata repositories for desired features
 		List possibleFeaturesToInstall = new ArrayList();
@@ -243,17 +268,7 @@ public class FeatureInstallManager implements IFeatureInstallManager,
 			return createErrorStatus(message, repoLocations, e);
 
 		}
-		IInstallableUnit featureToUpdate = null;
-		// Find iu to update
-		for (Iterator i = possibleFeaturesToInstall.iterator(); i.hasNext();) {
-			IInstallableUnit current = (IInstallableUnit) i.next();
-			Version currentV = current.getVersion();
-			if ((currentV.compareTo(maxInstalledFeatureVersion) > 0)
-					&& (featureToUpdate == null || currentV
-							.compareTo(featureToUpdate.getVersion()) > 0))
-				featureToUpdate = current;
-		}
-
+		IInstallableUnit featureToUpdate = getFeatureForUpdate(maxInstalledFeatureVersion, possibleFeaturesToInstall);
 		if (featureToUpdate == null)
 			return createErrorStatus("updateFeature: Nothing to update.  Could not find feature="
 					+ featureId.getId()
@@ -261,11 +276,29 @@ public class FeatureInstallManager implements IFeatureInstallManager,
 					+ featureId.getVersion()
 					+ " greater than in installed version in repositories");
 
+		List fToUninstall = new ArrayList();
+		fToUninstall.add(maxInstalledFeature);
+		
 		List fToInstall = new ArrayList();
 		fToInstall.add(featureToUpdate);
-		return installOrUninstallIUs(fToInstall, profile, monitor, true);
+		
+		return installOrUninstallIUs(fToInstall, fToUninstall, profile, monitor);
 	}
 
+	protected IInstallableUnit getFeatureForUpdate(Version currentFeatureVersion, Collection<IInstallableUnit> possibleFeaturesToInstall) {
+		IInstallableUnit featureToUpdate = null;
+		// Find iu to update
+		for (Iterator i = possibleFeaturesToInstall.iterator(); i.hasNext();) {
+			IInstallableUnit current = (IInstallableUnit) i.next();
+			Version currentV = current.getVersion();
+			if ((currentV.compareTo(currentFeatureVersion) > 0)
+					&& (featureToUpdate == null || currentV
+							.compareTo(featureToUpdate.getVersion()) > 0))
+				featureToUpdate = current;
+		}
+		return featureToUpdate;
+	}
+	
 	public IStatus updateFeature(IVersionedId featureId, URI[] repoLocations) {
 		return updateFeature(featureId, repoLocations, null);
 	}
@@ -278,6 +311,10 @@ public class FeatureInstallManager implements IFeatureInstallManager,
 		return updateFeature(featureId, null, null);
 	}
 
+	protected IQueryResult queryProfile(IProfile profile, IQuery<IInstallableUnit> query, IProgressMonitor monitor) {
+		return profile.query(query, monitor);
+	}
+	
 	public IStatus uninstallFeature(IVersionedId featureId,
 			URI[] repoLocations, String profileId) {
 		// Parameter sanity checks
@@ -295,18 +332,17 @@ public class FeatureInstallManager implements IFeatureInstallManager,
 		if (profile == null)
 			return createErrorStatus("no matching profileId=" + profileId);
 
-		IProgressMonitor monitor = new NullProgressMonitor();
+		IProgressMonitor monitor = getMonitorForUninstall();
 		String unitId = featureId.getId();
 		String unitVersion = featureId.getVersion();
 		// For given profile, we should find the specific version to remove
-		IQueryResult units = profile.query(
-				QueryUtil.createIUQuery(unitId, Version.create(unitVersion)),
+		IQueryResult units = queryProfile(profile,QueryUtil.createIUQuery(unitId, Version.create(unitVersion)),
 				monitor);
 		
 		// If we didn't find it installed then we can't uninstall it
 		if (units.isEmpty()) return createErrorStatus("uninstallFeature: Feature="+unitId+" with v="+unitVersion+" not found installed, so cannot be uninstalled");
 
-		return installOrUninstallIUs(units.toUnmodifiableSet(), profile, monitor, false);
+		return installOrUninstallIUs(null, units.toUnmodifiableSet(), profile, monitor);
 
 	}
 
@@ -399,7 +435,7 @@ public class FeatureInstallManager implements IFeatureInstallManager,
 	private IQueryResult[] getInstallableUnits(IProvisioningAgent agent,
 			URI[] locations, IQuery query, IProgressMonitor monitor)
 			throws ProvisionException {
-		IQueryable[] queryables = (locations == null) ? new IQueryable[] { (IMetadataRepository) agent
+		IQueryable[] queryables = (locations == null) ? new IQueryable[] { (IMetadataRepositoryManager) agent
 				.getService(IMetadataRepositoryManager.SERVICE_NAME) }
 				: getMetadataRepositories(agent, locations, monitor);
 		if (queryables != null) {

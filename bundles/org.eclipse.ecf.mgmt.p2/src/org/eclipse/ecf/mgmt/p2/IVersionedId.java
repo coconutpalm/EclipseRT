@@ -15,4 +15,6 @@ public interface IVersionedId {
 
 	public String getVersion();
 
+	public int compareVersion(String otherVersion);
+	public int compareVersion(IVersionedId other);
 }

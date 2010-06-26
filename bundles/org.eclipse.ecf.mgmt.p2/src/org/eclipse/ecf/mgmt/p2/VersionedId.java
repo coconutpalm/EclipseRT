@@ -12,6 +12,7 @@ package org.eclipse.ecf.mgmt.p2;
 import java.io.Serializable;
 
 import org.eclipse.core.runtime.Assert;
+import org.eclipse.equinox.p2.metadata.Version;
 
 public class VersionedId implements IVersionedId, Serializable {
 
@@ -46,18 +47,22 @@ public class VersionedId implements IVersionedId, Serializable {
 		return hashCode;
 	}
 
+	private boolean versionsEqual(String otherVersion) {
+		if (version == null) {
+			return (otherVersion == null);
+		} else {
+			return version.equals(otherVersion);
+		}
+	}
+	
 	public boolean equals(Object o) {
 		if (o == null)
 			return false;
 		if (!(o instanceof VersionedId))
 			return false;
 		VersionedId other = (VersionedId) o;
-		if (other.id.equals(id))
-			return version == null || !version.equals(other.version) ? true
-					: true;
-		else
-			return false;
-
+		if (other.id.equals(id)) return versionsEqual(other.version);
+		else return false;
 	}
 
 	public String toString() {
@@ -68,6 +73,20 @@ public class VersionedId implements IVersionedId, Serializable {
 		buffer.append(version);
 		buffer.append("]"); //$NON-NLS-1$
 		return buffer.toString();
+	}
+
+	public int compareVersion(String otherVersion) {
+		if (otherVersion == null) return 1;
+		// Create OSGi version for this
+		Version tVersion = Version.parseVersion(this.version);
+		// Create local OSGi version for other
+		Version oVersion = Version.parseVersion(otherVersion);
+		return tVersion.compareTo(oVersion);
+	}
+
+	public int compareVersion(IVersionedId other) {
+		if (other == null) return 1;
+		return compareVersion(other.getVersion());
 	}
 
 }
