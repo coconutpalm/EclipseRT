@@ -20,8 +20,10 @@ import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IAdapterManager;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.MultiStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.ecf.core.status.SerializableMultiStatus;
 import org.eclipse.ecf.core.status.SerializableStatus;
 import org.eclipse.ecf.internal.mgmt.p2.install.host.Activator;
 import org.eclipse.ecf.mgmt.p2.IVersionedId;
@@ -77,6 +79,13 @@ public class FeatureInstallManager implements IFeatureInstallManager,
 		return new NullProgressMonitor();
 	}
 
+	private IStatus serializeStatus(IStatus status) {
+		if (status == null) return null;
+		if (status.isMultiStatus()) {
+			return new SerializableMultiStatus(new MultiStatus(status.getPlugin(),status.getCode(),status.getChildren(),status.getMessage(),status.getException()));
+		} else return new SerializableStatus(status);
+	}
+	
 	public IStatus installFeature(IVersionedId featureId, URI[] repoLocations,
 			String profileId) {
 		// Parameter sanity checks
@@ -153,10 +162,10 @@ public class FeatureInstallManager implements IFeatureInstallManager,
 		// check plan result
 		IStatus planStatus = result.getStatus();
 		if (!planStatus.isOK())
-			return new SerializableStatus(planStatus);
+			return serializeStatus(planStatus);
 		// Otherwise execute plan
 		IStatus engineResult = executePlan(result, engine, provContext, monitor);
-		return new SerializableStatus(engineResult);
+		return serializeStatus(engineResult);
 	}
 
 	protected ProvisioningContext createProvisioningContext(
