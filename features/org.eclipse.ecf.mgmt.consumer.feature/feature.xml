@@ -33,4 +33,8 @@
          id="org.eclipse.ecf.mgmt.p2.feature"
          version="0.0.0"/>
 
+   <includes
+         id="org.eclipse.ecf.mgmt.extension.feature"
+         version="0.0.0"/>
+
 </feature>
