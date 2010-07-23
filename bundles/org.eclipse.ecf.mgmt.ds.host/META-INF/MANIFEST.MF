@@ -20,5 +20,5 @@ Import-Package: org.apache.felix.scr,
  org.osgi.util.tracker
 Require-Bundle: org.eclipse.equinox.common
 Bundle-Localization: bundle
-Export-Package: org.eclipse.ecf.internal.mgmt.ds.host,
+Export-Package: org.eclipse.ecf.internal.mgmt.ds.host;x-internal:=true,
  org.eclipse.ecf.mgmt.ds.host
