@@ -41,7 +41,6 @@ public class ComponentInfo implements IComponentInfo, Serializable {
 	private boolean isDefaultEnabled;
 	private boolean isImmediate;
 	private String[] services;
-	@SuppressWarnings("rawtypes")
 	private Properties properties;
 	private ReferenceInfo[] referenceInfos;
 	private boolean isActivated;
@@ -97,7 +96,7 @@ public class ComponentInfo implements IComponentInfo, Serializable {
 		}
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@SuppressWarnings({ "rawtypes" })
 	private Properties convertProperties(Dictionary dict) {
 		Properties result = new Properties();
 		for (Enumeration e = dict.keys(); e.hasMoreElements();) {
