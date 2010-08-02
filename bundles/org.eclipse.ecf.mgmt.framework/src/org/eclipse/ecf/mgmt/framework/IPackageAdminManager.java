@@ -10,8 +10,11 @@
 package org.eclipse.ecf.mgmt.framework;
 
 import org.eclipse.core.runtime.IStatus;
+import org.osgi.service.packageadmin.PackageAdmin;
 
 public interface IPackageAdminManager {
+
+	public static final int	BUNDLE_TYPE_FRAGMENT = PackageAdmin.BUNDLE_TYPE_FRAGMENT;
 
 	public IExportedPackageInfo[] getExportedPackages(IBundleId bundle);
 	public IExportedPackageInfo[] getExportedPackages(String name);
