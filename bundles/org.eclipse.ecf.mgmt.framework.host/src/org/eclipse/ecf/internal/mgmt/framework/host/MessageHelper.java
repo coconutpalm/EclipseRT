@@ -12,7 +12,6 @@ package org.eclipse.ecf.internal.mgmt.framework.host;
 import org.eclipse.osgi.service.resolver.BundleSpecification;
 import org.eclipse.osgi.service.resolver.ImportPackageSpecification;
 import org.eclipse.osgi.service.resolver.VersionConstraint;
-import org.eclipse.osgi.util.NLS;
 
 public class MessageHelper {
 
@@ -24,17 +23,14 @@ public class MessageHelper {
 		if (unsatisfied.isResolved())
 			throw new IllegalArgumentException();
 		if (unsatisfied instanceof ImportPackageSpecification)
-			return NLS.bind("Missing imported package {0}", //$NON-NLS-1$
-					toString(unsatisfied));
+			return "Missing imported package "+toString(unsatisfied); //$NON-NLS-1$
 		if (unsatisfied instanceof BundleSpecification) {
 			if (((BundleSpecification) unsatisfied).isOptional())
-				return NLS.bind("Missing optionally required bundle {0}", //$NON-NLS-1$
-						toString(unsatisfied));
+				return "Missing optionally required bundle "+toString(unsatisfied); //$NON-NLS-1$
 			else
-				return NLS.bind("Missing required bundle {0}", //$NON-NLS-1$
-						toString(unsatisfied));
+				return "Missing required bundle "+toString(unsatisfied); //$NON-NLS-1$
 		} else {
-			return NLS.bind("Missing host {0}", toString(unsatisfied)); //$NON-NLS-1$
+			return "Missing host {0}"+toString(unsatisfied); //$NON-NLS-1$
 		}
 	}
 
